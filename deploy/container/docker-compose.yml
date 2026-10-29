@@ -1,0 +1,47 @@
+name: goldeneye-dashboard
+services:
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: deploy/container/Dockerfile.dashboard
+    image: goldeneye/dashboard:v186
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8050:8050"
+    env_file:
+      - ../../.env.dashboard
+    environment:
+      PG_HOST: host.docker.internal
+      PG_PORT: "5432"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "8050"
+      APP_DEBUG: "false"
+      PRELOAD_DATA_ON_START: "false"
+      LAZY_PAGE_FIGURES: "true"
+      DATA_CACHE_SECONDS: "300"
+      QUERY_CACHE_SECONDS: "180"
+      DASHBOARD_QUERY_TIMEOUT_MS: "20000"
+      PG_POOL_MIN: "1"
+      PG_POOL_MAX: "8"
+      DASHBOARD_HTTP_TIMING: "true"
+      DASHBOARD_HTTP_SLOW_MS: "1000"
+      DASHBOARD_SQL_SLOW_MS: "1500"
+      LOG_SQL_TIMING: "false"
+      MEDIA_GATEWAY_URL: "http://host.docker.internal:8052"
+      MEDIA_GATEWAY_TOKEN: ${MEDIA_GATEWAY_TOKEN:?set MEDIA_GATEWAY_TOKEN in root .env first}
+      MEDIA_GATEWAY_TIMEOUT: "20"
+      NAS_IMAGE_FIRST: "false"
+      ALLOW_SILVER_IMAGE_FALLBACK: "false"
+      THUMB_CACHE_DIR: /cache/thumbs
+    volumes:
+      - thumbnail_cache:/cache/thumbs
+    cpus: 3.0
+    mem_limit: 4g
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8050/api/healthz',timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+volumes:
+  thumbnail_cache:

@@ -1,0 +1,28 @@
+psycopg2-binary>=2.9
+pyodbc>=5.1
+python-dotenv>=1.0
+numpy>=1.26
+pandas>=2.2
+Pillow>=10.0
+torch>=2.3
+torchvision>=0.18
+opencv-python-headless>=4.10
+ImageHash>=4.3
+PyYAML>=6.0
+dash>=2.17
+Flask>=3.0
+plotly>=5.20
+reportlab>=4.2
+matplotlib>=3.8
+waitress>=3.0
+pytest>=8.0
+# Wajib untuk source besar. PyPI menyediakan wheel Windows x86-64/Python 3.12.
+faiss-cpu==1.14.3
+# Geospatial boundary import (SHP/GeoJSON -> PostgreSQL reference layer)
+geopandas>=1.0
+pyogrio>=0.10
+shapely>=2.0
+pyproj>=3.6
+
+# DB60 SAP ZPAY connector (no ODBC required)
+mssql-python

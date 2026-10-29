@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Golden Eye · Pipeline Control Center</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='control.css') }}" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">GE</div>
+        <div>
+          <div class="brand-title">GOLDEN EYE</div>
+          <div class="brand-sub">PIPELINE CONTROL CENTER</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-scroll="overview"><span>01</span>Overview</button>
+        <button class="nav-item" data-scroll="lineage"><span>02</span>Data Lineage</button>
+        <button class="nav-item" data-scroll="visual-audit"><span>03</span>Visual Audit</button>
+        <button class="nav-item" data-scroll="storage"><span>04</span>PG Storage</button>
+        <button class="nav-item" data-scroll="run-control"><span>05</span>Run Pipeline</button>
+        <button class="nav-item" data-scroll="active-job"><span>06</span>Job Monitor</button>
+        <button class="nav-item" data-scroll="scheduler"><span>07</span>Automation</button>
+        <button class="nav-item" data-scroll="history"><span>08</span>History</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="mini-status"><span id="sidebar-worker-dot" class="dot offline"></span><span id="sidebar-worker">Worker checking…</span></div>
+        <div class="muted small">Standalone operations portal<br/>Dashboard analytics tetap terpisah.</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">OPERATIONS / MONTHLY ORCHESTRATION</div>
+          <h1>Pipeline Control Center</h1>
+          <p>Pull data, merge evidence, detection, publish, dan report dalam satu alur yang dapat dipantau.</p>
+        </div>
+        <div class="top-actions">
+          <div class="clock" id="clock">--:--:--</div>
+          <button class="ghost-btn" id="refresh-btn">Refresh</button>
+        </div>
+      </header>
+
+      <section id="overview" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">SYSTEM STATUS</div><h2>Operational Overview</h2></div>
+          <div class="overview-actions"><button id="clear-orphans-btn" class="ghost-btn">Clear stale job state</button><div id="config-pill" class="pill neutral">Checking configuration</div></div>
+        </div>
+        <div class="status-grid">
+          <article class="status-card accent-blue">
+            <div class="status-label">WORKER</div>
+            <div class="status-value" id="worker-status">CHECKING</div>
+            <div class="status-meta" id="worker-meta">Heartbeat belum dibaca</div>
+          </article>
+          <article class="status-card accent-violet">
+            <div class="status-label">TARGET BERIKUTNYA</div>
+            <div class="status-value" id="suggested-month">--</div>
+            <div class="status-meta">Default previous month</div>
+          </article>
+          <article class="status-card accent-green">
+            <div class="status-label">LAST SUCCESS</div>
+            <div class="status-value" id="last-success">--</div>
+            <div class="status-meta">Full monthly pipeline</div>
+          </article>
+          <article class="status-card accent-orange">
+            <div class="status-label">QUEUE</div>
+            <div class="status-value" id="queue-count">0</div>
+            <div class="status-meta">Pending / running jobs</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="lineage" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">TRACEABILITY MAP</div><h2>Data Lineage & Pipeline Trace</h2></div>
+          <div class="pill neutral">READ-ONLY VISUAL MAP</div>
+        </div>
+        <div class="lineage-intro panel">
+          <div>
+            <div class="section-kicker">WHY THIS EXISTS</div>
+            <h3>Visualisasi sumber DB, tabel, dan alur eksekusi</h3>
+            <p>Bagian ini menunjukkan Golden Eye membaca data dari DB mana saja, tabel mana saja, lalu menulis hasil ke layer processing dan gold. Tujuannya agar trace jelas dan tidak perlu modifikasi manual untuk memahami jalurnya.</p>
+          </div>
+          <div id="trace-rules" class="trace-rules"></div>
+        </div>
+        <div class="lineage-system-head">
+          <div class="section-kicker">LIVE PIPELINE MAP</div>
+          <div class="muted small">Hijau = ready/success · Biru = running · Merah = failed/offline · Abu = waiting/external</div>
+        </div>
+        <div class="panel graph-panel">
+          <div id="source-health-grid" class="source-health-grid"></div>
+          <div class="graph-scroll"><svg id="pipeline-graph" class="pipeline-graph" viewBox="0 0 1540 900" preserveAspectRatio="xMinYMin meet"></svg></div>
+        </div>
+        <div class="lineage-system-head">
+          <div class="section-kicker">SOURCE & TARGET LAYERS</div>
+          <div class="muted small">Nama database/tabel mengikuti konfigurasi .env aktif.</div>
+        </div>
+        <div id="lineage-systems" class="lineage-systems"></div>
+        <div class="lineage-system-head">
+          <div class="section-kicker">PIPELINE EXECUTION TRACE</div>
+          <div class="muted small">Command existing tetap source of truth. Visual ini hanya memetakan input-output.</div>
+        </div>
+        <div id="lineage-pipelines" class="trace-pipelines"></div>
+      </section>
+
+      <section id="visual-audit" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">READ-ONLY AUDIT</div><h2>Visual Audit</h2></div>
+          <div id="visual-audit-status" class="pill neutral">Belum dimuat</div>
+        </div>
+        <div class="panel visual-audit-panel">
+          <div class="visual-audit-filter-grid">
+            <label><span>System</span><select id="visual-audit-system"><option value="">Semua</option><option value="HARMONY">Harmony</option><option value="ELHP">ELHP</option></select></label>
+            <label><span>Company</span><select id="visual-audit-company"><option value="">Semua</option><option value="PWP">PWP</option><option value="DIN">DIN</option><option value="DAN">DAN</option><option value="DWT">DWT</option></select></label>
+            <label><span>Bulan</span><input id="visual-audit-month" type="month" value="{{ default_month }}" /></label>
+            <div class="visual-audit-filter-action"><button id="visual-audit-load" class="primary-btn">Load Audit</button></div>
+          </div>
+          <div class="muted small visual-audit-note">Audit ini memindahkan monitoring Visual vs SAP Verified dari Dashboard analitik ke Control Center. Query hanya berjalan saat filter dimuat, bukan pada refresh status worker.</div>
+        </div>
+
+        <div id="visual-audit-kpis" class="status-grid visual-audit-kpis"></div>
+        <div id="visual-audit-checks" class="visual-audit-checks"></div>
+
+        <div class="panel visual-audit-chart-panel">
+          <div class="panel-head"><div><div class="section-kicker">MONTHLY COMPARISON</div><h3>Visual vs SAP Verified</h3></div></div>
+          <div id="visual-audit-chart" class="visual-audit-chart"><div class="muted">Pilih filter lalu klik Load Audit.</div></div>
+        </div>
+
+        <div class="panel table-panel">
+          <div class="panel-head"><div><div class="section-kicker">GROUP STATUS</div><h3>Visual Reused Verification</h3></div><div id="visual-audit-group-count" class="muted small"></div></div>
+          <div class="table-wrap visual-audit-table-wrap">
+            <table class="visual-audit-table">
+              <thead><tr><th>Company</th><th>Group</th><th>Bulan</th><th>Estate</th><th>Visual</th><th>SAP Verified</th><th>Unverified</th><th>Not in SAP</th><th>Wrong Estate</th><th>Status</th></tr></thead>
+              <tbody id="visual-audit-body"><tr><td colspan="10" class="muted">Audit belum dimuat.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="storage" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">POSTGRESQL STORAGE MANAGEMENT</div><h2>Storage &amp; Dashboard Read Models</h2></div>
+          <button id="storage-refresh" class="ghost-btn">Scan Storage</button>
+        </div>
+        <div class="panel storage-panel">
+          <div class="storage-headline"><strong id="storage-db-size">Belum dipindai</strong><span id="storage-db-name" class="muted"></span></div>
+          <p class="muted small">Ukuran tabel meliputi heap, index, dan TOAST. Estimasi baris dari statistik PostgreSQL (tidak menghitung ulang jutaan record). Tidak memuat storage saat refresh worker.</p>
+          <div id="storage-read-models" class="diag-result">Read-model PostgreSQL belum diperiksa.</div>
+          <div class="table-wrap"><table class="visual-audit-table storage-table"><thead><tr><th>Relation</th><th>Total</th><th>TOAST</th><th>Index</th><th>Estimated rows</th><th>Dead tuples</th><th>Policy</th><th>Action</th></tr></thead>
+          <tbody id="storage-table-body"><tr><td colspan="8" class="muted">Klik Scan Storage.</td></tr></tbody></table></div>
+        </div>
+        <div class="panel storage-panel">
+          <div class="storage-headline"><div><h3>Hot Evidence — Reused vs KT vs Kandidat Review</h3><p class="muted small">Audit manual berbasis metadata. Tidak membaca BYTEA dan tidak menghapus gambar.</p></div><button id="hot-evidence-audit-run" class="ghost-btn">Audit Gambar Reused</button></div>
+          <p class="muted small">GOLD_ACTIVE_KEEP: wajib tersedia untuk foto Gold aktif. KT_BEFORE_KEEP_REVIEW: masih direferensikan transport KT Before. UNREFERENCED_REVIEW_NAS: bukan otomatis aman dihapus; periksa NAS dan pipeline dahulu.</p>
+          <div id="hot-evidence-audit-result" class="diag-result">Klik Audit Gambar Reused untuk mengelompokkan isi processing.gambar_reused.</div>
+          <div class="table-wrap"><table class="visual-audit-table storage-table"><thead><tr><th>Company</th><th>Kategori</th><th>Rows</th><th>Logical payload</th></tr></thead><tbody id="hot-evidence-audit-rows"><tr><td colspan="4" class="muted">Audit belum dijalankan.</td></tr></tbody></table></div>
+        </div>
+        <div class="panel storage-delete-panel">
+          <div class="section-kicker">HIGH-RISK OPERATION • MANUAL AUTHORIZATION</div>
+          <h3>Penghapusan backup corrupt legacy (opsional)</h3>
+          <p class="muted small">Default nonaktif. Gold, RAW, Context, gambar_reused, dan cache aktif dilindungi. Hanya backup silver.image_store_all_files_corrupt_YYYYMMDD_HHMMSS yang boleh diajukan untuk DROP, dan hanya setelah backup terverifikasi. Penghapusan permanen; tidak ada CASCADE.</p>
+          <label><span>Table (pilih dari storage scan)</span><input id="storage-delete-relation" readonly placeholder="silver.image_store_all_files_corrupt_..." /></label>
+          <label><span>Storage Admin Token (tidak disimpan browser)</span><input id="storage-admin-token" type="password" autocomplete="off" placeholder="Token dari .env admin" /></label>
+          <label class="storage-confirm"><input type="checkbox" id="storage-backup-verified" /> Saya sudah memverifikasi bahwa data backup ini tidak unik dan sudah dicadangkan di tempat terpisah.</label>
+          <button id="storage-preview-delete" class="ghost-btn">Preview Penghapusan</button>
+          <div id="storage-delete-message" class="muted small"></div>
+        </div>
+      </section>
+
+      <section id="run-control" class="section two-col">
+        <div class="panel run-panel">
+          <div class="panel-head">
+            <div><div class="section-kicker">MANUAL CONTROL</div><h2>Run Monthly Pipeline</h2></div>
+            <span class="badge">SAFE QUEUE</span>
+          </div>
+          <div class="form-grid">
+            <label>Target Month
+              <input id="target-month" type="month" value="{{ default_month }}" />
+            </label>
+            <label>Pipeline
+              <select id="pipeline-name">
+                {% for key, label in pipelines.items() %}
+                  <option value="{{ key }}" {% if key == 'MONTHLY_FULL' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+          <div class="field-label">Company</div>
+          <div class="company-grid" id="company-grid">
+            {% for company in ['PWP','DIN','DAN','DWT'] %}
+              <label class="company-chip">
+                <input type="checkbox" value="{{ company }}" {% if company in default_companies %}checked{% endif %}/>
+                <span>{{ company }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="run-summary" id="run-summary">Full Monthly akan menjalankan data + reused + transport PWP/DIN + publish + report.</div>
+          <button id="run-btn" class="primary-btn"><span class="play">▶</span> RUN MONTHLY PIPELINE</button>
+          <div class="hint">Double-click aman: sistem menolak job aktif dengan scope identik.</div>
+        </div>
+
+        <div class="panel config-panel">
+          <div class="panel-head"><div><div class="section-kicker">SOURCE READINESS</div><h2>Configuration</h2></div></div>
+          <div id="config-list" class="config-list"></div>
+          <div class="server-diagnostic">
+            <div class="server-diagnostic-head">
+              <div><div class="section-kicker">SILVER CONNECTION CHECK</div><h3>NAS & PostgreSQL Diagnostic</h3></div>
+              <div id="diag-status" class="pill neutral">Belum dites</div>
+            </div>
+            <div class="diag-controls">
+              <select id="diag-company"><option>PWP</option><option>DIN</option><option>DAN</option><option>DWT</option></select>
+              <select id="diag-kind"><option value="PANEN">PANEN</option><option value="TRANSPORT">TRANSPORT</option></select>
+              <button id="diag-run" class="ghost-btn">Test Connection</button>
+            </div>
+            <div class="muted small">Read-only test: TCP SMB 445, akses path NAS, sample directory scan, sample read 1 MB, PostgreSQL latency, active session, dan lock waiter.</div>
+            <div id="diag-result" class="diag-result"><div class="muted">Klik Test Connection saat Silver terasa lambat.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="active-job" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">LIVE EXECUTION</div><h2>Current Job</h2></div>
+          <button id="cancel-btn" class="danger-ghost hidden">Stop After Current Step</button>
+        </div>
+        <div id="active-empty" class="empty-state">
+          <div class="empty-icon">✓</div>
+          <h3>Tidak ada job aktif</h3>
+          <p>Worker siap mengambil job berikutnya dari queue.</p>
+        </div>
+        <div id="active-wrap" class="panel hidden">
+          <div class="job-hero">
+            <div>
+              <div class="job-code" id="active-code">JOB</div>
+              <h3 id="active-title">Monthly Pipeline</h3>
+              <div class="job-meta" id="active-meta"></div>
+            </div>
+            <div class="progress-ring-text"><strong id="active-pct">0%</strong><span>progress</span></div>
+          </div>
+          <div class="progress-track"><div id="active-progress" class="progress-fill"></div></div>
+          <div id="step-list" class="step-list"></div>
+        </div>
+      </section>
+
+      <section id="scheduler" class="section two-col scheduler-layout">
+        <div class="panel">
+          <div class="panel-head"><div><div class="section-kicker">AUTOMATION</div><h2>Monthly Scheduler</h2></div><label class="switch"><input id="schedule-enabled" type="checkbox"><span></span></label></div>
+          <p class="panel-copy">Saat aktif, worker otomatis membuat job untuk <strong>bulan sebelumnya</strong> pada jadwal yang ditentukan. Tidak membuat duplikat jika bulan tersebut sudah pending, running, atau success.</p>
+          <div class="schedule-grid">
+            <label>Tanggal
+              <select id="schedule-day">{% for d in range(1,29) %}<option value="{{ d }}">{{ d }}</option>{% endfor %}</select>
+            </label>
+            <label>Jam
+              <input id="schedule-time" type="time" value="02:00" />
+            </label>
+            <label>Pipeline
+              <select id="schedule-pipeline">
+                {% for key, label in pipelines.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+              </select>
+            </label>
+          </div>
+          <div class="field-label">Company otomatis</div>
+          <div class="company-grid compact" id="schedule-company-grid">
+            {% for company in ['PWP','DIN','DAN','DWT'] %}
+              <label class="company-chip"><input type="checkbox" value="{{ company }}" checked/><span>{{ company }}</span></label>
+            {% endfor %}
+          </div>
+          <button id="save-schedule" class="secondary-btn">Save Automation</button>
+        </div>
+        <div class="panel automation-note">
+          <div class="section-kicker">HOW IT WORKS</div>
+          <h2>Tidak perlu ingat terminal lagi</h2>
+          <div class="flow-list">
+            <div><span>1</span><p><strong>Scheduler</strong><br/>membuat job bulanan.</p></div>
+            <div><span>2</span><p><strong>Worker</strong><br/>menjalankan command satu per satu.</p></div>
+            <div><span>3</span><p><strong>PostgreSQL</strong><br/>menyimpan progress, error, dan audit trail.</p></div>
+            <div><span>4</span><p><strong>Control Center</strong><br/>menampilkan status tanpa menahan proses.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="history" class="section">
+        <div class="section-head"><div><div class="section-kicker">AUDIT TRAIL</div><h2>Job History</h2></div></div>
+        <div class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Status</th><th>Month</th><th>Pipeline</th><th>Company</th><th>Progress</th><th>Started</th><th>Action</th></tr></thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <footer>Golden Eye · Pipeline Control Center · Standalone Operations Portal</footer>
+    </main>
+  </div>
+
+  <div id="drawer-overlay" class="drawer-overlay hidden"></div>
+  <aside id="drawer" class="drawer hidden">
+    <div class="drawer-head"><div><div class="section-kicker">JOB DETAIL</div><h2 id="drawer-title">Job</h2></div><button id="drawer-close">×</button></div>
+    <div id="drawer-content"></div>
+  </aside>
+  <div id="toast" class="toast hidden"></div>
+  <script src="{{ url_for('static', filename='control.js') }}"></script>
+</body>
+</html>
